@@ -26,7 +26,7 @@ class Command(LabelCommand):
 
     def info(self, **options):
         from djip import get_version
-        from pip.commands.search import transform_hits, print_results
+        from pip.commands.search import transform_hits
         from pip.util import get_installed_distributions
 
         import xmlrpclib

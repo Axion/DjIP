@@ -1,0 +1,133 @@
+{% extends "admin/base_site.html" %}
+
+<!-- LOADING -->
+{% load i18n adminmedia %}
+
+<!-- STYLESHEETS -->
+{% block stylesheets %}
+    {{ block.super }}
+    {# <link rel="stylesheet" type="text/css" href="{% admin_media_prefix %}css/changelist.css" /> #}
+    <link rel="stylesheet" type="text/css" href="{{ settings_var.URL_FILEBROWSER_MEDIA }}css/filebrowser.css" />
+{% endblock %}
+
+<!-- JAVASCRIPTS -->
+{% block javascripts %}
+    {{ block.super }}
+    {% ifequal query.pop '1' %} <!-- FileBrowseField -->
+    <script language="javascript" type="text/javascript" src="{{ settings_var.URL_FILEBROWSER_MEDIA }}js/FB_FileBrowseField.js"></script>
+    {% endifequal %}
+    {% ifequal query.pop '2' %} <!-- TinyMCE -->
+    <script language="javascript" type="text/javascript" src="{{ settings_var.URL_TINYMCE }}tiny_mce_popup.js"></script>
+    <script language="javascript" type="text/javascript" src="{{ settings_var.URL_FILEBROWSER_MEDIA }}js/FB_TinyMCE.js"></script>
+    {% if query.mce_rdomain %}<script language="javascript">document.domain = "{{ query.mce_rdomain }}"</script>{% endif %}
+    {% endifequal %}
+    {% ifequal query.pop '3' %} <!-- CKeditor (former "FCKeditor") -->
+    <script language="javascript" type="text/javascript" src="{{ settings_var.URL_FILEBROWSER_MEDIA }}js/FB_CKEditor.js"></script>
+    {% endifequal %}
+    {{ media }}
+    
+    <script type="text/javascript" src="{% admin_media_prefix %}js/grappelli.change_list.js"></script>
+    <script type="text/javascript" charset="utf-8">
+        (function($) {
+            $(document).ready(function() {
+                {% if is_popup %}
+                    // UGLY HACK: REMOVE ACTIONS and LIST_EDITABLES FOR POPUPS
+                    // shouldn't be there in the first place, see
+                    // http://code.djangoproject.com/ticket/11700
+                    $('div#actions').hide();
+                    $('input.action-select').parent().hide();
+                    $('input#action-toggle').parent().hide();
+                    $('div.changelist-results input').attr('disabled', 'disabled');
+                    $('div.changelist-results select').attr('disabled', 'disabled');
+                    $('div.changelist-results textarea').attr('disabled', 'disabled').addClass("mceNoEditor");
+                    $('div#submit').hide();
+                    $('.related-lookup, .add-another').attr("onClick", "return false;");
+                    $('.vDateField').datepicker("disable");
+                {% endif %}
+                $("a.pulldown-actions-handler").bind("click", function() {
+                    if (!$(this).parent().hasClass("open")) {
+                        $("tr").removeClass("selected");
+                        $(".pulldown-actions-container").removeClass("open");
+                        $(this).parent().addClass("open");
+                        $(this).parent().parent().parent().addClass("selected");
+                    } else {
+                        $(this).parent().removeClass("open");
+                        $(this).parent().parent().parent().removeClass("selected");
+                    }
+                });
+                $('body').grp_change_list();
+                $(document).keypress(function(evt) {
+                    if (evt.keyCode == '27') {
+                        $(".pulldown-actions-container:visible").removeClass("open");
+                        $(".pulldown-actions-container").parent().parent().removeClass("selected");
+                        $(".fb_preview_container:visible").hide();
+                    }
+                });
+                $(document).mousedown(function(evt) {
+                    if ($(".pulldown-actions-container").is(":visible")) {
+                        var $target = $(evt.target);
+                        if (!$(evt.target).hasClass("pulldown-actions-container") && $target.parents(".pulldown-actions-container").length == 0) {
+                            $(".pulldown-actions-container").removeClass("open");
+                            $(".pulldown-actions-container").parent().parent().removeClass("selected");
+                        }
+                    }
+                });
+            });
+        })(django.jQuery);
+    </script>
+{% endblock %}
+
+<!-- COLTYPE/BODYCLASS-- >
+{% block bodyclass %}change-list filebrowser{% if query.pop %} popup{% endif %}{% endblock %}
+{% block content-class %}content-flexible{% endblock %}
+
+<!-- BREADCRUMBS -->
+{% block breadcrumbs %}{% include "djip/include/breadcrumbs.html" %}{% endblock %}
+
+{% block object-tools %}
+<ul class="tools">
+    <li><a href="{% url djip_update_all %}">{% trans "Update all" %}</a></li>
+</ul>
+{% endblock %}
+
+<!-- CONTENT -->
+{% block content %}
+
+    <div id="changelist" class="container-full">
+        <!-- RESULTS -->
+
+        <div class="module changelist-results">
+            <table cellspacing="0">
+                <thead>
+                    <tr>
+                        <th class=" action-checkbox-column">
+                            <input type="checkbox" id="action-toggle">
+                        </th>
+                        <th>Name</th>
+                        <th>Version</th>
+                        <th>Latest</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for result in results %}
+                        <tr class="{% cycle 'row1' 'row2' %}">
+                            <td><input type="checkbox" class="action-select" value="{{ result.name }}" name="_selected_action"></td>
+                            <td><a href="" style="color:{% if result.version != result.latest %}red{% endif %};">{{ result.name }}</a></td>
+                            <td style="color:{% if result.version != result.latest %}red{% endif %};">{{ result.version }}</td>
+                            <td style="color:{% if result.version != result.latest %}red{% endif %};">{{ result.latest }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="module pagination">
+        <ul class="pagination">
+            <li class="results"><span>
+            {% blocktrans count counter=results|length %}1 result{% plural %}{{ counter }} results{% endblocktrans %}
+            </span></li>
+        </ul>
+        <br clear="all">
+    </div>
+
+{% endblock %}
